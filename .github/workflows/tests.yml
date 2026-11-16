@@ -37,3 +37,32 @@ jobs:
         with:
           name: test-coverage-report
           path: coverage/
+
+  e2e:
+    name: E2E Tests with Playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E Tests
+        run: npm run test:e2e
+
+      # 關鍵特性：archive: false 達成免解壓直接網頁預覽
+      - name: Upload Playwright HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          path: playwright-report/index.html
+          archive: false

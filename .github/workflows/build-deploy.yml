@@ -1,0 +1,54 @@
+name: Build and Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Web Application
+        run: npm run build
+
+      # 將編譯打包後的 dist/ 目錄上傳為 octomatch 產物
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: octomatch
+          path: dist/
+
+  dev:
+    name: Deploy Dev
+    needs: build # 關鍵依賴：確保 build 完成後才執行
+    runs-on: ubuntu-latest
+    steps:
+      # 從先前的 build Job 下載 octomatch 產物至 website/ 目錄
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: octomatch
+          path: website
+
+      - name: Deploy to Dev Environment
+        run: |
+          echo "=== 已下載之產物目錄樹狀結構 ==="
+          tree website || ls -la website
+          echo "=== 模擬部署至 Dev 測試環境完成 ==="

@@ -1,0 +1,35 @@
+name: Deploy Prod
+
+on:
+  # 跨工作流程觸發：監聽 'Build and Deploy' 完成事件
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read # 關鍵權限：允許 Action 跨工作流程讀取 Artifacts
+
+jobs:
+  prod:
+    name: Deploy Prod
+    runs-on: ubuntu-latest
+    # 核心條件：僅在上游工作流程成功時執行，且綁定具備審批門禁的 prod 環境
+    if: github.event.workflow_run.conclusion == 'success'
+    environment: prod
+    steps:
+      # 關鍵語法：跨 Workflow 透過 run-id 下載先前產物
+      - name: Download Artifact from Build Workflow
+        uses: actions/download-artifact@v4
+        with:
+          name: octomatch
+          path: website
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Production
+        run: |
+          echo "=== 跨工作流程下載產物驗收 ==="
+          tree website || ls -la website
+          echo "=== 正式環境發布上線完成 ==="
